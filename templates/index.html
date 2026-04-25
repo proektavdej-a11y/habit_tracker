@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Окно настроек -->
+<div class="modal fade" id="goalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Настройка целей</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/update_goals">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Цель по калориям (ккал)</label>
+                        <input type="number" class="form-control" name="calorie_goal" value="{{ goal.calorie_goal }}">
+                    </div>
+                    <div class="mb-3">
+                        <label>Цель по тренировкам (минут)</label>
+                        <input type="number" class="form-control" name="workout_goal" value="{{ goal.workout_goal }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-calendar-day"></i> {{ today.strftime('%d.%m.%Y') }}</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#goalModal">
+                <i class="fas fa-cog"></i> Настроить цели
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- ПИТАНИЕ -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-apple-alt text-success"></i> Питание сегодня
+                    <a href="/add_meal" class="btn btn-sm btn-primary float-end">+ Добавить</a>
+                </h5>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Калории: {{ total_calories }}/{{ goal.calorie_goal }} ккал</span>
+                        <span>{{ (total_calories / goal.calorie_goal * 100)|round }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: {{ (total_calories / goal.calorie_goal * 100) }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <small>Белки</small><br>
+                        <strong>{{ total_protein }}г</strong>
+                    </div>
+                    <div class="col-4">
+                        <small>Углеводы</small><br>
+                        <strong>{{ total_carbs }}г</strong>
+                    </div>
+                    <div class="col-4">
+                        <small>Жиры</small><br>
+                        <strong>{{ total_fats }}г</strong>
+                    </div>
+                </div>
+                
+                {% if meals %}
+                    {% for meal in meals %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ meal.meal_type }}</strong> - {{ meal.food_name }}
+                                    <br><small class="text-muted">{{ meal.time }}</small>
+                                </div>
+                                <div>
+                                    {{ meal.calories }} ккал
+                                    <form method="POST" action="/delete_meal/{{ meal.id }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-link text-danger" onclick="return confirm('Удалить?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">Нет записей о питании</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- ТРЕНИРОВКИ -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-dumbbell text-primary"></i> Тренировки сегодня
+                    <a href="/add_workout" class="btn btn-sm btn-primary float-end">+ Добавить</a>
+                </h5>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Время: {{ total_workout_time }}/{{ goal.workout_goal }} мин</span>
+                        <span>{{ (total_workout_time / goal.workout_goal * 100)|round }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: {{ (total_workout_time / goal.workout_goal * 100) }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center mb-3">
+                    <strong>🔥 Сожжено: {{ total_calories_burned }} ккал</strong>
+                </div>
+                
+                {% if workouts %}
+                    {% for workout in workouts %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ workout.exercise_name }}</strong>
+                                    <br><small class="text-muted">{{ workout.category }} | {{ workout.duration }} мин</small>
+                                </div>
+                                <div>
+                                    {{ workout.calories_burned }} ккал
+                                    <form method="POST" action="/delete_workout/{{ workout.id }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-link text-danger" onclick="return confirm('Удалить?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">Нет записей о тренировках</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ПРИВЫЧКИ -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-tasks"></i> Привычки на сегодня
+                    <a href="/add_habit" class="btn btn-sm btn-primary float-end">+ Добавить</a>
+                </h5>
+                
+                {% if habits %}
+                    {% for item in habits %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center mb-2 border rounded p-2">
+                            <div>
+                                <strong>{{ item.habit.name }}</strong>
+                                {% if item.habit.description %}
+                                    <br><small class="text-muted">{{ item.habit.description }}</small>
+                                {% endif %}
+                                <br><span class="badge bg-secondary">{{ item.habit.category }}</span>
+                            </div>
+                            <button class="btn btn-sm toggle-habit {% if item.completed %}btn-success{% else %}btn-outline-primary{% endif %}"
+                                    data-habit-id="{{ item.habit.id }}">
+                                <i class="fas {% if item.completed %}fa-check-circle{% else %}fa-circle{% endif %}"></i>
+                                {% if item.completed %}Выполнено{% else %}Отметить{% endif %}
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">Нет привычек. Добавьте первую!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('.toggle-habit').click(function() {
+        const button = $(this);
+        const habitId = button.data('habit-id');
+        
+        $.ajax({
+            url: `/toggle_habit/${habitId}`,
+            method: 'POST',
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

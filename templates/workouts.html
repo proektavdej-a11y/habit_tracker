@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-dumbbell"></i> Дневник тренировок</h2>
+            <a href="/add_workout" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Добавить
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Сегодня</h5>
+                {% if workouts %}
+                    {% for workout in workouts %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ workout.exercise_name }}</strong>
+                                    <br><small>{{ workout.category }} | {{ workout.duration }} мин | {{ workout.time }}</small>
+                                    {% if workout.sets %}
+                                        <br><small>{{ workout.sets }} подходов × {{ workout.reps }} повторений</small>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {{ workout.calories_burned }} ккал
+                                    <form method="POST" action="/delete_workout/{{ workout.id }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-link text-danger">🗑️</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center py-4">Нет записей</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Активность за неделю</h5>
+                <canvas id="workoutChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const ctx = document.getElementById('workoutChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [{% for stat in week_stats %}'{{ stat.date.strftime("%d.%m") }}',{% endfor %}],
+        datasets: [{
+            label: 'Минуты',
+            data: [{% for stat in week_stats %}{{ stat.duration }},{% endfor %}],
+            backgroundColor: '#764ba2'
+        }]
+    }
+});
+</script>
+{% endblock %}

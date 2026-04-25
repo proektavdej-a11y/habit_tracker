@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="fas fa-apple-alt"></i> Добавить прием пищи</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label>Тип приема</label>
+                        <select class="form-select" name="meal_type" required>
+                            <option value="Завтрак">Завтрак</option>
+                            <option value="Обед">Обед</option>
+                            <option value="Ужин">Ужин</option>
+                            <option value="Перекус">Перекус</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Что съели?</label>
+                        <input type="text" class="form-control" name="food_name" required placeholder="Овсяная каша с бананом">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Калории</label>
+                            <input type="number" class="form-control" name="calories" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Время</label>
+                            <input type="time" class="form-control" name="time">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>Белки (г)</label>
+                            <input type="number" step="0.1" class="form-control" name="protein" value="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Углеводы (г)</label>
+                            <input type="number" step="0.1" class="form-control" name="carbs" value="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Жиры (г)</label>
+                            <input type="number" step="0.1" class="form-control" name="fats" value="0">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Сохранить</button>
+                    <a href="/nutrition" class="btn btn-secondary w-100 mt-2">Отмена</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

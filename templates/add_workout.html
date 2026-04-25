@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="fas fa-dumbbell"></i> Добавить тренировку</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label>Упражнение</label>
+                        <input type="text" class="form-control" name="exercise_name" required placeholder="Отжимания, приседания, бег...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Категория</label>
+                        <select class="form-select" name="category" required>
+                            <option value="Кардио">Кардио</option>
+                            <option value="Силовая">Силовая</option>
+                            <option value="Растяжка">Растяжка</option>
+                            <option value="Йога">Йога</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Длительность (мин)</label>
+                            <input type="number" class="form-control" name="duration" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Сожжено калорий</label>
+                            <input type="number" class="form-control" name="calories_burned" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Подходы</label>
+                            <input type="number" class="form-control" name="sets" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Повторения</label>
+                            <input type="number" class="form-control" name="reps" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Время</label>
+                        <input type="time" class="form-control" name="time">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Сохранить</button>
+                    <a href="/workouts" class="btn btn-secondary w-100 mt-2">Отмена</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
