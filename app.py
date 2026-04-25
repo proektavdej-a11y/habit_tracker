@@ -241,7 +241,7 @@ def toggle_habit(habit_id):
     today = datetime.now().date()
     log = HabitLog.query.filter_by(habit_id=habit_id, date=today).first()
     
-    if log:
+    if log: 
         db.session.delete(log)
         message = 'Отметка снята'
         completed = False
