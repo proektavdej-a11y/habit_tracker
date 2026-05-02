@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret-key-12345'
@@ -14,9 +15,21 @@ db = SQLAlchemy(app)
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False, default='МойПрофиль')
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)  # Новое поле
+    password_hash = db.Column(db.String(200), nullable=True)  # Новое поле
     total_points = db.Column(db.Integer, default=0)
     level = db.Column(db.Integer, default=1)
+    
+    def set_password(self, password):
+        """Хэшируем пароль"""
+        from werkzeug.security import generate_password_hash
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        """Проверяем пароль"""
+        from werkzeug.security import check_password_hash
+        return check_password_hash(self.password_hash, password)
 
 class Habit(db.Model):
     __tablename__ = 'habits'
@@ -78,14 +91,14 @@ class Feed(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 # ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-
 def get_user():
-    user = User.query.first()
-    if not user:
-        user = User(username='МойПрофиль')
-        db.session.add(user)
-        db.session.commit()
-    return user
+    """Получает текущего пользователя"""
+    from flask import session
+    user_id = session.get('user_id')
+    if user_id:
+        return User.query.get(user_id)
+    # Если пользователь не залогинен, возвращаем None
+    return None
 
 def add_to_feed(user_id, action_type, content):
     feed = Feed(user_id=user_id, action_type=action_type, content=content)
@@ -101,12 +114,97 @@ def add_points(user_id, points):
             user.level = new_level
             add_to_feed(user_id, 'level_up', f'Достигнут {new_level} уровень! 🎉')
         db.session.commit()
+# ========== РАБОТА С СЕССИЯМИ И ПОЛЬЗОВАТЕЛЯМИ ==========
+
+def get_current_user():
+    """Получает текущего залогиненного пользователя из сессии"""
+    from flask import session
+    user_id = session.get('user_id')
+    if user_id:
+        return User.query.get(user_id)
+    return None
+
+def login_required(f):
+    """Декоратор для проверки авторизации"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not get_current_user():
+            flash('Пожалуйста, войдите в систему', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 # ========== ГЛАВНАЯ СТРАНИЦА ==========
+# ========== РЕГИСТРАЦИЯ И ВХОД ==========
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Проверки
+        if password != confirm_password:
+            flash('Пароли не совпадают!', 'danger')
+            return redirect(url_for('register'))
+        
+        if User.query.filter_by(username=username).first():
+            flash('Пользователь с таким именем уже существует!', 'danger')
+            return redirect(url_for('register'))
+        
+        if email and User.query.filter_by(email=email).first():
+            flash('Пользователь с такой почтой уже существует!', 'danger')
+            return redirect(url_for('register'))
+        
+        # Создаем нового пользователя
+        new_user = User(username=username, email=email)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Создаем цели по умолчанию
+        goal = DailyGoal(user_id=new_user.id, date=datetime.now().date())
+        db.session.add(goal)
+        db.session.commit()
+        
+        flash('Регистрация успешна! Теперь войдите в систему.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            flash(f'Добро пожаловать, {user.username}!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Неверное имя пользователя или пароль!', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    flash('Вы вышли из системы', 'info')
+    return redirect(url_for('login'))
 @app.route('/')
+@login_required 
 def index():
     user = get_user()
+    if not user:
+        flash('Пожалуйста, войдите в систему', 'warning')
+        return redirect(url_for('login'))
     today = datetime.now().date()
     habits = Habit.query.filter_by(user_id=user.id).all()
     
@@ -375,6 +473,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.drop_all()  # Удаляем старые таблицы
         db.create_all()  # Создаем новые
-        get_user()  # Создаем основного пользователя
-        create_test_user_silent()  # Создаем тестового друга (без flash)
     app.run(debug=True)

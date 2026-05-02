@@ -20,32 +20,19 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">
-                            <i class="fas fa-home"></i> Главная
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/nutrition">
-                            <i class="fas fa-apple-alt"></i> Питание
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/workouts">
-                            <i class="fas fa-dumbbell"></i> Тренировки
-                        </a>
-                    </li>
-                    <li class="nav-item">
-    <a class="nav-link" href="/friends">
-        <i class="fas fa-users"></i> Друзья
-    </a>
-</li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/habits">
-                            <i class="fas fa-check-circle"></i> Привычки
-                        </a>
-                    </li>
-                </ul>
+    {% if session.user_id %}
+        <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
+        <li class="nav-item"><a class="nav-link" href="/habits">Привычки</a></li>
+        <li class="nav-item"><a class="nav-link" href="/nutrition">Питание</a></li>
+        <li class="nav-item"><a class="nav-link" href="/workouts">Тренировки</a></li>
+        <li class="nav-item"><a class="nav-link" href="/friends">Друзья</a></li>
+        <li class="nav-item"><a class="nav-link" href="/feed">Лента</a></li>
+        <li class="nav-item"><a class="nav-link" href="/logout">Выйти</a></li>
+    {% else %}
+        <li class="nav-item"><a class="nav-link" href="/login">Вход</a></li>
+        <li class="nav-item"><a class="nav-link" href="/register">Регистрация</a></li>
+    {% endif %}
+</ul>
             </div>
         </div>
     </nav>
