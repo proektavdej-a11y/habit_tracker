@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users"></i> Мои друзья</h2>
+        <a href="/add_friend" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Добавить друга
+        </a>
+    </div>
+
+    <!-- ===== ПОЛУЧЕННЫЕ ЗАЯВКИ ===== -->
+    {% if received_requests %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-inbox"></i> Входящие заявки 
+                <span class="badge bg-warning">{{ received_requests|length }}</span>
+            </h5>
+            {% for req in received_requests %}
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                <div>
+                    <i class="fas fa-user-circle fa-2x me-2" style="color: #00ff88;"></i>
+                    <strong>{{ req.user.username }}</strong>
+                    <br>
+                    <small class="text-secondary">хочет добавить вас в друзья</small>
+                </div>
+                <div>
+                    <form method="POST" action="/accept_friend/{{ req.id }}" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-success">
+                            <i class="fas fa-check"></i> Принять
+                        </button>
+                    </form>
+                    <form method="POST" action="/decline_friend/{{ req.id }}" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fas fa-times"></i> Отклонить
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ===== ОТПРАВЛЕННЫЕ ЗАЯВКИ ===== -->
+    {% if sent_requests %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-paper-plane"></i> Отправленные заявки
+            </h5>
+            {% for req in sent_requests %}
+            <div class="d-flex align-items-center border-bottom pb-2 mb-2">
+                <i class="fas fa-user-circle fa-2x me-2" style="color: #ffcc00;"></i>
+                <div>
+                    <strong>{{ req.friend.username }}</strong>
+                    <br>
+                    <small class="text-secondary">Ожидает ответа...</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ===== СПИСОК ДРУЗЕЙ ===== -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-user-friends"></i> Друзья 
+                <span class="badge bg-primary">{{ friends|length }}</span>
+            </h5>
+            
+            {% if friends %}
+                <div class="row">
+                    {% for friend in friends %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex justify-content-between align-items-center p-3" 
+                             style="background: rgba(255,255,255,0.05); border-radius: 15px;">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-circle fa-3x me-3" style="color: #00ff88;"></i>
+                                <div>
+                                    <h6 class="mb-0">{{ friend.username }}</h6>
+                                    <div class="mt-1">
+                                        <span class="badge" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                            <i class="fas fa-star"></i> Уровень {{ friend.level }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <form method="POST" action="/remove_friend/{{ friend.id }}" 
+                                  onsubmit="return confirm('Удалить друга из списка?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-smile-wink fa-3x text-secondary mb-3"></i>
+                    <p class="text-secondary">У вас пока нет друзей</p>
+                    <a href="/add_friend" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Найти друзей
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

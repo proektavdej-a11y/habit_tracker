@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card fade-in">
+            <div class="card-header bg-transparent">
+                <h4 class="mb-0"><i class="fas fa-user-plus"></i> Добавить друга</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" name="username" required 
+                               placeholder="Введите имя пользователя">
+                        <div class="form-text text-secondary mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            Введите точное имя пользователя, которого хотите добавить
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb"></i>
+                        <small>Подсказка: Вы можете добавить тестового пользователя, создав другого пользователя в системе</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-paper-plane"></i> Отправить заявку
+                    </button>
+                    <a href="/friends" class="btn btn-secondary w-100 mt-2">
+                        <i class="fas fa-arrow-left"></i> Отмена
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
