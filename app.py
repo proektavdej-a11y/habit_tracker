@@ -16,19 +16,15 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=True)  # Новое поле
-    password_hash = db.Column(db.String(200), nullable=True)  # Новое поле
+    email = db.Column(db.String(120), unique=True, nullable=True)  # nullable=True - можно не указывать
+    password_hash = db.Column(db.String(200), nullable=False)
     total_points = db.Column(db.Integer, default=0)
     level = db.Column(db.Integer, default=1)
     
     def set_password(self, password):
-        """Хэшируем пароль"""
-        from werkzeug.security import generate_password_hash
         self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
-        """Проверяем пароль"""
-        from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, password)
 
 class Habit(db.Model):
@@ -145,33 +141,34 @@ def register():
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+        confirm = request.form.get('confirm_password')
         
         # Проверки
-        if password != confirm_password:
+        if password != confirm:
             flash('Пароли не совпадают!', 'danger')
             return redirect(url_for('register'))
         
         if User.query.filter_by(username=username).first():
-            flash('Пользователь с таким именем уже существует!', 'danger')
+            flash('Имя пользователя уже занято!', 'danger')
             return redirect(url_for('register'))
         
+        # Проверка email только если он был введен
         if email and User.query.filter_by(email=email).first():
-            flash('Пользователь с такой почтой уже существует!', 'danger')
+            flash('Email уже используется!', 'danger')
             return redirect(url_for('register'))
         
-        # Создаем нового пользователя
-        new_user = User(username=username, email=email)
-        new_user.set_password(password)
-        db.session.add(new_user)
+        # Создаем пользователя
+        user = User(username=username, email=email if email else None)
+        user.set_password(password)
+        db.session.add(user)
         db.session.commit()
         
         # Создаем цели по умолчанию
-        goal = DailyGoal(user_id=new_user.id, date=datetime.now().date())
+        goal = DailyGoal(user_id=user.id, date=datetime.now().date())
         db.session.add(goal)
         db.session.commit()
         
-        flash('Регистрация успешна! Теперь войдите в систему.', 'success')
+        flash('Регистрация успешна! Войдите в систему.', 'success')
         return redirect(url_for('login'))
     
     return render_template('register.html')
@@ -255,9 +252,11 @@ def add_habit():
     return render_template('add_habit.html')
 
 @app.route('/toggle_habit/<int:habit_id>', methods=['POST'])
+@login_required
 def toggle_habit(habit_id):
     user = get_user()
     today = datetime.now().date()
+    habit = Habit.query.get(habit_id)  # Добавьте эту строку
     log = HabitLog.query.filter_by(habit_id=habit_id, date=today).first()
     
     if log:
@@ -267,6 +266,7 @@ def toggle_habit(habit_id):
         log = HabitLog(habit_id=habit_id, user_id=user.id, date=today)
         db.session.add(log)
         add_points(user.id, 10)
+        add_to_feed(user.id, 'habit_completed', f'Выполнил привычку "{habit.name}" ✅')  # Добавьте эту строку
         completed = True
     
     db.session.commit()
@@ -290,6 +290,7 @@ def nutrition():
     return render_template('nutrition.html', meals=meals)
 
 @app.route('/add_meal', methods=['GET', 'POST'])
+@login_required
 def add_meal():
     if request.method == 'POST':
         user = get_user()
@@ -300,6 +301,7 @@ def add_meal():
         db.session.add(meal)
         db.session.commit()
         add_points(user.id, 5)
+        add_to_feed(user.id, 'meal_added', f'Добавил запись о питании: {meal.food_name} 🍎')  # Добавьте эту строку
         flash('Прием пищи добавлен!', 'success')
         return redirect(url_for('nutrition'))
     return render_template('add_meal.html')
@@ -322,6 +324,7 @@ def workouts():
     return render_template('workouts.html', workouts=workouts_list)
 
 @app.route('/add_workout', methods=['GET', 'POST'])
+@login_required
 def add_workout():
     if request.method == 'POST':
         user = get_user()
@@ -448,9 +451,11 @@ def create_test_user():
 # ========== ЛЕНТА ==========
 
 @app.route('/feed')
+@login_required
 def feed():
     user = get_user()
-    feed_posts = Feed.query.filter_by(user_id=user.id).order_by(Feed.created_at.desc()).limit(20).all()
+    # Получаем все записи для пользователя, сортируем от новых к старым
+    feed_posts = Feed.query.filter_by(user_id=user.id).order_by(Feed.created_at.desc()).all()
     return render_template('feed.html', feed_posts=feed_posts)
 
 # ========== ЗАПУСК ==========
