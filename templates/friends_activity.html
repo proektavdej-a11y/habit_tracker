@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="text-center mb-4">
+        <h2><i class="fas fa-chart-line"></i> Активность друзей</h2>
+        <p class="text-secondary">Сравните свои успехи с друзьями!</p>
+    </div>
+
+    {% if friends_stats %}
+        <div class="row">
+            {% for stat in friends_stats %}
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-user-circle fa-3x me-3" style="color: #ffcc00;"></i>
+                            <div>
+                                <h5 class="mb-0">{{ stat.friend.username }}</h5>
+                                <span class="badge" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                    <i class="fas fa-star"></i> Уровень {{ stat.friend.level }}
+                                </span>
+                                <span class="badge bg-info ms-2">
+                                    <i class="fas fa-coins"></i> {{ stat.total_points }} XP
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center mt-3">
+                            <div class="col-4">
+                                <div class="stat-card" style="padding: 10px;">
+                                    <i class="fas fa-dumbbell fa-2x text-primary"></i>
+                                    <div class="mt-1">
+                                        <strong>{{ stat.workouts_today }}</strong>
+                                        <small class="d-block">сегодня</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card" style="padding: 10px;">
+                                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                                    <div class="mt-1">
+                                        <strong>{{ stat.habits_today }}</strong>
+                                        <small class="d-block">привычек</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card" style="padding: 10px;">
+                                    <i class="fas fa-history fa-2x text-info"></i>
+                                    <div class="mt-1">
+                                        <strong>{{ stat.total_workouts }}</strong>
+                                        <small class="d-block">всего</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <a href="/send_message_to/{{ stat.friend.id }}" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-comment"></i> Написать сообщение
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-users fa-3x text-secondary mb-3"></i>
+                <h5>Нет друзей</h5>
+                <p class="text-secondary">Добавьте друзей, чтобы видеть их активность!</p>
+                <a href="/friends" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Найти друзей
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

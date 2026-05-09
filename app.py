@@ -5,7 +5,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret-key-12345'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///habits.db'
+import os
+
+# Для локальной разработки
+if os.environ.get('PYTHONANYWHERE_DOMAIN'):
+    # На PythonAnywhere
+    app.config['SQLALCHEMY_DATABASE_URI'] = '/home/ВАШ_ЛОГИН/ВАШ_ПРОЕКТ/habits.db'
+else:
+    # Локально
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///habits.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -520,16 +528,77 @@ def create_test_user():
     else:
         flash('ℹ️ Тестовый друг уже существует', 'info')
     return redirect(url_for('friends'))
-
+    
+@app.route('/friends-activity')
+@login_required
+def friends_activity():
+    current_user_obj = get_user()
+    
+    # Получаем ID друзей
+    friendships = Friend.query.filter(
+        ((Friend.user_id == current_user_obj.id) | (Friend.friend_id == current_user_obj.id)),
+        Friend.status == 'accepted'
+    ).all()
+    
+    friends_ids = []
+    for friendship in friendships:
+        if friendship.user_id == current_user_obj.id:
+            friends_ids.append(friendship.friend_id)
+        else:
+            friends_ids.append(friendship.user_id)
+    
+    # Статистика друзей
+    friends_stats = []
+    for friend_id in friends_ids:
+        friend = User.query.get(friend_id)
+        
+        # Статистика за сегодня
+        today = datetime.now().date()
+        workouts_today = Workout.query.filter_by(user_id=friend_id, date=today).count()
+        habits_today = HabitLog.query.filter_by(user_id=friend_id, date=today).count()
+        
+        # Общая статистика
+        total_workouts = Workout.query.filter_by(user_id=friend_id).count()
+        total_points = friend.total_points
+        
+        friends_stats.append({
+            'friend': friend,
+            'workouts_today': workouts_today,
+            'habits_today': habits_today,
+            'total_workouts': total_workouts,
+            'total_points': total_points
+        })
+    
+    return render_template('friends_activity.html', friends_stats=friends_stats)
 # ========== ЛЕНТА ==========
-
 @app.route('/feed')
 @login_required
 def feed():
-    user = get_user()
-    # Получаем все записи для пользователя, сортируем от новых к старым
-    feed_posts = Feed.query.filter_by(user_id=user.id).order_by(Feed.created_at.desc()).all()
-    return render_template('feed.html', feed_posts=feed_posts)
+    current_user_obj = get_user()
+    
+    # Получаем ID всех друзей
+    friendships = Friend.query.filter(
+        ((Friend.user_id == current_user_obj.id) | (Friend.friend_id == current_user_obj.id)),
+        Friend.status == 'accepted'
+    ).all()
+    
+    # Собираем ID друзей и свой ID
+    friends_ids = [current_user_obj.id]
+    for friendship in friendships:
+        if friendship.user_id == current_user_obj.id:
+            friends_ids.append(friendship.friend_id)
+        else:
+            friends_ids.append(friendship.user_id)
+    
+    # Получаем посты от пользователя и друзей
+    feed_posts = Feed.query.filter(Feed.user_id.in_(friends_ids)).order_by(Feed.created_at.desc()).limit(50).all()
+    
+    # Добавляем информацию о авторе к каждому посту
+    for post in feed_posts:
+        post.author = User.query.get(post.user_id)
+        post.is_me = (post.user_id == current_user_obj.id)
+    
+    return render_template('feed.html', feed_posts=feed_posts, current_user=current_user_obj)
 
 # ========== ЗАПУСК ==========
 # ========== КОМАНДА ДЛЯ СОЗДАНИЯ ТЕСТОВОГО ДРУГА (без flash) ==========

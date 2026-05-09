@@ -3,60 +3,98 @@
 {% block content %}
 <div class="fade-in">
     <div class="text-center mb-4">
-        <h2><i class="fas fa-stream"></i> Лента достижений</h2>
-        <p class="text-secondary">Ваши последние успехи и достижения</p>
+        <h2><i class="fas fa-stream"></i> Лента активности</h2>
+        <p class="text-secondary">Следите за своими успехами и успехами друзей!</p>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="btn-group w-100" role="group">
+                <button class="btn btn-outline-primary active" onclick="filterFeed('all')">
+                    <i class="fas fa-globe"></i> Все
+                </button>
+                <button class="btn btn-outline-primary" onclick="filterFeed('me')">
+                    <i class="fas fa-user"></i> Мои
+                </button>
+                <button class="btn btn-outline-primary" onclick="filterFeed('friends')">
+                    <i class="fas fa-users"></i> Друзья
+                </button>
+            </div>
+        </div>
     </div>
 
     {% if feed_posts %}
-        {% for post in feed_posts %}
-        <div class="card mb-3 fade-in">
-            <div class="card-body">
-                <div class="d-flex align-items-start">
-                    <div class="me-3">
-                        <i class="fas fa-user-circle fa-3x" style="color: #00ff88;"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between">
-                            <strong>Я</strong>
-                            <small class="text-secondary">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+        <div id="feed-container">
+            {% for post in feed_posts %}
+            <div class="card mb-3 fade-in feed-item" data-author-type="{% if post.is_me %}me{% else %}friend{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3">
+                            <i class="fas fa-user-circle fa-3x" style="color: {% if post.is_me %}#00ff88{% else %}#ffcc00{% endif %};"></i>
                         </div>
-                        <p class="mt-2 mb-0">
-                            {% if post.action_type == 'habit_completed' %}
-                                <i class="fas fa-check-circle text-success"></i>
-                                <span>{{ post.content }}</span>
-                            {% elif post.action_type == 'workout' %}
-                                <i class="fas fa-dumbbell text-primary"></i>
-                                <span>{{ post.content }}</span>
-                            {% elif post.action_type == 'meal_added' %}
-                                <i class="fas fa-apple-alt text-warning"></i>
-                                <span>{{ post.content }}</span>
-                            {% elif post.action_type == 'level_up' %}
-                                <i class="fas fa-trophy text-warning"></i>
-                                <span>{{ post.content }}</span>
-                            {% else %}
-                                <i class="fas fa-star text-info"></i>
-                                <span>{{ post.content }}</span>
-                            {% endif %}
-                        </p>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>
+                                        {% if post.is_me %}
+                                            <span style="color: #00ff88;">Я</span>
+                                        {% else %}
+                                            <span style="color: #ffcc00;">{{ post.author.username }}</span>
+                                        {% endif %}
+                                    </strong>
+                                    {% if not post.is_me %}
+                                        <span class="badge bg-info ms-2">Друг</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-secondary">
+                                    <i class="fas fa-clock"></i> 
+                                    {{ post.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                </small>
+                            </div>
+                            <p class="mt-2 mb-0">
+                                {% if post.action_type == 'habit_completed' %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    <span>{{ post.content }}</span>
+                                    <span class="badge bg-success ms-2">+10 XP</span>
+                                {% elif post.action_type == 'workout' %}
+                                    <i class="fas fa-dumbbell text-primary"></i>
+                                    <span>{{ post.content }}</span>
+                                    <span class="badge bg-primary ms-2">+50 XP</span>
+                                {% elif post.action_type == 'meal_added' %}
+                                    <i class="fas fa-apple-alt text-warning"></i>
+                                    <span>{{ post.content }}</span>
+                                    <span class="badge bg-warning ms-2">+5 XP</span>
+                                {% elif post.action_type == 'level_up' %}
+                                    <i class="fas fa-trophy text-warning"></i>
+                                    <span>{{ post.content }}</span>
+                                {% elif post.action_type == 'friend' %}
+                                    <i class="fas fa-user-friends text-info"></i>
+                                    <span>{{ post.content }}</span>
+                                {% else %}
+                                    <i class="fas fa-star text-info"></i>
+                                    <span>{{ post.content }}</span>
+                                {% endif %}
+                            </p>
+                            
+                            <!-- Кнопка лайка (демо) -->
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-secondary like-btn" onclick="likePost({{ post.id }})">
+                                    <i class="far fa-heart"></i> <span class="like-count">0</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-        
-        <!-- Пагинация, если записей много -->
-        {% if feed_posts|length >= 20 %}
-        <div class="text-center">
-            <small class="text-secondary">Показаны последние 20 записей</small>
-        </div>
-        {% endif %}
-        
     {% else %}
         <div class="card">
             <div class="card-body text-center py-5">
                 <i class="fas fa-newspaper fa-3x text-secondary mb-3"></i>
                 <h5>Лента пока пуста</h5>
-                <p class="text-secondary">Начните выполнять тренировки и привычки, чтобы заполнить ленту достижениями!</p>
+                <p class="text-secondary">Начните выполнять тренировки и привычки, чтобы заполнить ленту!</p>
                 <div class="mt-3">
                     <a href="/workouts" class="btn btn-primary me-2">
                         <i class="fas fa-dumbbell"></i> Добавить тренировку
@@ -69,4 +107,75 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+function filterFeed(type) {
+    const items = document.querySelectorAll('.feed-item');
+    const buttons = document.querySelectorAll('.btn-group .btn');
+    
+    // Обновляем активную кнопку
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Фильтруем
+    items.forEach(item => {
+        if (type === 'all') {
+            item.style.display = 'block';
+        } else if (type === 'me') {
+            item.style.display = item.dataset.authorType === 'me' ? 'block' : 'none';
+        } else if (type === 'friends') {
+            item.style.display = item.dataset.authorType === 'friend' ? 'block' : 'none';
+        }
+    });
+}
+
+function likePost(postId) {
+    const btn = event.currentTarget;
+    const likeCount = btn.querySelector('.like-count');
+    let count = parseInt(likeCount.innerText);
+    
+    if (btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-outline-secondary');
+        likeCount.innerText = count - 1;
+    } else {
+        btn.classList.add('active');
+        btn.classList.add('btn-danger');
+        btn.classList.remove('btn-outline-secondary');
+        likeCount.innerText = count + 1;
+        
+        // Анимация
+        btn.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            btn.style.transform = 'scale(1)';
+        }, 200);
+    }
+}
+</script>
+
+<style>
+.btn-group .btn.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+}
+
+.like-btn.active {
+    background: #dc3545;
+    color: white;
+}
+
+.like-btn i {
+    pointer-events: none;
+}
+
+.feed-item {
+    transition: transform 0.2s;
+}
+
+.feed-item:hover {
+    transform: translateX(5px);
+}
+</style>
 {% endblock %}
