@@ -367,74 +367,147 @@ def update_goals():
 
 # ========== ДРУЗЬЯ ==========
 
+
 @app.route('/friends')
+@login_required
 def friends():
-    user = get_user()
-    sent_requests = Friend.query.filter_by(user_id=user.id, status='pending').all()
-    received_requests = Friend.query.filter_by(friend_id=user.id, status='pending').all()
+    current_user_obj = get_user()
     
-    accepted_friends = []
+    # Отправленные заявки - получаем данные о друге через отдельный запрос
+    sent_requests_raw = Friend.query.filter_by(
+        user_id=current_user_obj.id, 
+        status='pending'
+    ).all()
+    
+    # Обогащаем данные о друге
+    sent_requests = []
+    for req in sent_requests_raw:
+        friend_user = User.query.get(req.friend_id)
+        sent_requests.append({
+            'id': req.id,
+            'friend': friend_user,
+            'status': req.status
+        })
+    
+    # Полученные заявки
+    received_requests_raw = Friend.query.filter_by(
+        friend_id=current_user_obj.id, 
+        status='pending'
+    ).all()
+    
+    received_requests = []
+    for req in received_requests_raw:
+        user_from = User.query.get(req.user_id)
+        received_requests.append({
+            'id': req.id,
+            'user': user_from,
+            'status': req.status
+        })
+    
+    # Подтвержденные друзья
     friendships = Friend.query.filter(
-        ((Friend.user_id == user.id) | (Friend.friend_id == user.id)),
+        ((Friend.user_id == current_user_obj.id) | (Friend.friend_id == current_user_obj.id)),
         Friend.status == 'accepted'
     ).all()
     
+    accepted_friends = []
     for friendship in friendships:
-        if friendship.user_id == user.id:
+        if friendship.user_id == current_user_obj.id:
             friend = User.query.get(friendship.friend_id)
         else:
             friend = User.query.get(friendship.user_id)
         if friend:
             accepted_friends.append(friend)
     
+    # Для отладки
+    print(f"=== СТАТУС ДРУЗЕЙ для {current_user_obj.username} ===")
+    print(f"Отправленные заявки: {len(sent_requests)}")
+    print(f"Полученные заявки: {len(received_requests)}")
+    print(f"Друзей: {len(accepted_friends)}")
+    
     return render_template('friends.html', 
                          sent_requests=sent_requests,
                          received_requests=received_requests,
                          friends=accepted_friends)
 
+
 @app.route('/add_friend', methods=['GET', 'POST'])
+@login_required
 def add_friend():
     if request.method == 'POST':
         username = request.form.get('username')
         current_user = get_user()
+        
+        # Ищем друга по имени
         friend = User.query.filter_by(username=username).first()
         
+        # Проверки
         if not friend:
-            flash('Пользователь не найден!', 'danger')
+            flash(f'Пользователь "{username}" не найден!', 'danger')
         elif friend.id == current_user.id:
             flash('Нельзя добавить самого себя!', 'warning')
         else:
+            # Проверяем, есть ли уже заявка
             existing = Friend.query.filter(
                 ((Friend.user_id == current_user.id) & (Friend.friend_id == friend.id)) |
                 ((Friend.user_id == friend.id) & (Friend.friend_id == current_user.id))
             ).first()
             
             if existing:
-                flash('Заявка уже существует!', 'warning')
+                if existing.status == 'pending':
+                    flash(f'Заявка уже отправлена пользователю {username} (ожидает ответа)', 'warning')
+                elif existing.status == 'accepted':
+                    flash(f'Вы уже друзья с {username}!', 'info')
             else:
-                new_request = Friend(user_id=current_user.id, friend_id=friend.id, status='pending')
+                # Создаем новую заявку
+                new_request = Friend(
+                    user_id=current_user.id, 
+                    friend_id=friend.id, 
+                    status='pending'
+                )
                 db.session.add(new_request)
                 db.session.commit()
-                flash(f'Заявка отправлена {username}!', 'success')
+                flash(f'✅ Заявка отправлена пользователю {username}!', 'success')
+        
         return redirect(url_for('friends'))
+    
     return render_template('add_friend.html')
 
 @app.route('/accept_friend/<int:request_id>', methods=['POST'])
+@login_required
 def accept_friend(request_id):
     friend_request = Friend.query.get_or_404(request_id)
-    friend_request.status = 'accepted'
-    db.session.commit()
-    flash('Вы теперь друзья!', 'success')
+    current_user_obj = get_user()
+    
+    # Проверяем, что заявка адресована текущему пользователю
+    if friend_request.friend_id == current_user_obj.id:
+        friend_request.status = 'accepted'
+        db.session.commit()
+        
+        # Добавляем в ленту
+        friend = User.query.get(friend_request.user_id)
+        add_to_feed(current_user_obj.id, 'friend', f'Теперь дружит с {friend.username} 🤝')
+        
+        flash('✅ Вы теперь друзья!', 'success')
+    else:
+        flash('Ошибка: это не ваша заявка', 'danger')
+    
     return redirect(url_for('friends'))
 
 @app.route('/decline_friend/<int:request_id>', methods=['POST'])
+@login_required
 def decline_friend(request_id):
     friend_request = Friend.query.get_or_404(request_id)
-    db.session.delete(friend_request)
-    db.session.commit()
-    flash('Заявка отклонена', 'info')
+    current_user_obj = get_user()
+    
+    if friend_request.friend_id == current_user_obj.id:
+        db.session.delete(friend_request)
+        db.session.commit()
+        flash('❌ Заявка отклонена', 'info')
+    else:
+        flash('Ошибка: это не ваша заявка', 'danger')
+    
     return redirect(url_for('friends'))
-
 @app.route('/create_test_user')
 def create_test_user():
     """Создает тестового пользователя (работает через браузер)"""
@@ -475,7 +548,7 @@ def create_test_user_silent():
 # ========== ЗАПУСК ==========
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.drop_all()  # Удаляем старые таблицы
-        db.create_all()  # Создаем новые
+    #with app.app_context():
+       # db.drop_all()  # Удаляем старые таблицы
+        #db.create_all()  # Создаем новые
     app.run(debug=True)

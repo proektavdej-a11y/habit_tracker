@@ -9,7 +9,7 @@
         </a>
     </div>
 
-    <!-- ===== ПОЛУЧЕННЫЕ ЗАЯВКИ ===== -->
+    <!-- ПОЛУЧЕННЫЕ ЗАЯВКИ -->
     {% if received_requests %}
     <div class="card mb-4">
         <div class="card-body">
@@ -43,7 +43,7 @@
     </div>
     {% endif %}
 
-    <!-- ===== ОТПРАВЛЕННЫЕ ЗАЯВКИ ===== -->
+    <!-- ОТПРАВЛЕННЫЕ ЗАЯВКИ -->
     {% if sent_requests %}
     <div class="card mb-4">
         <div class="card-body">
@@ -64,7 +64,7 @@
     </div>
     {% endif %}
 
-    <!-- ===== СПИСОК ДРУЗЕЙ ===== -->
+    <!-- СПИСОК ДРУЗЕЙ -->
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">
@@ -89,12 +89,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <form method="POST" action="/remove_friend/{{ friend.id }}" 
-                                  onsubmit="return confirm('Удалить друга из списка?')">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
                         </div>
                     </div>
                     {% endfor %}
